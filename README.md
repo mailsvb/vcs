@@ -40,13 +40,16 @@ export VCS_PORT=3001
 
 #### Frontend Vue app
 
-Set the `VITE_APP_SERVER` parameter in file `/frontend/.env` to `http://localhost:3001`. This tells your web app where the Application server is hosted at.
+Set the `VITE_APP_SERVER` environment variable to `http://localhost:3001`. This tells your web app where the Application server is hosted at.
 
 E.g.:
 
 ```env
 # So in development set to localhost:3001 for example
-VITE_APP_SERVER=http://localhost:3001
+export VITE_APP_SERVER=http://localhost:3001
+
+# Set the port where the frontend webserver should listen on. Default is 443
+export VCS_FRONTEND_PORT=443
 ```
 
 ### Start the app

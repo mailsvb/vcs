@@ -14,5 +14,9 @@ export default defineConfig({
       PACKAGE_VERSION: version,
       PACKAGE_VERSION_SDK: sdkVersion,
     }
+  },
+  server: {
+      port: process.env.VCS_FRONTEND_PORT || 3000,
+      origin: process.env.VCS_FRONTEND_URL || 'http://127.0.0.1:3000'
   }
 });
