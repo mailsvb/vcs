@@ -24,12 +24,6 @@
         <input data-autotest="user" v-model="user.name" />
       </div>
       <div class="pure-control-group">
-        <label>Your country</label>
-        <select data-autotest="selectCountry" v-model="user.country">
-          <option data-autotest="country" v-for="country in countries" :key="country.id" :value="country.id">{{ country.name }}</option>
-        </select>
-      </div>
-      <div class="pure-control-group">
         <label>Join with</label>
         <select data-autotest="roomType" v-model="mediaPreselection">
           <option data-autotest="both" value="both">audio and video</option>
@@ -95,8 +89,6 @@
 </style>
 
 <script>
-import { countries } from 'countries-list';
-import randomWords from 'random-words';
 import SvgIcon from '@jamescoyle/vue-icon';
 import { mdiTune } from '@mdi/js';
 import Preferences from './Preferences.vue';
@@ -110,7 +102,6 @@ export default {
   data() {
     return {
       roomName: null,
-      countries: [],
       user: {},
       mediaPreselection: 'both',
       version: '',
@@ -122,11 +113,7 @@ export default {
     // Fetch config backend
     await this.$store.dispatch('fetchConfig');
 
-    this.roomName = this.$store.state.activeRoom || randomWords({ exactly: 1, maxLength: 5, wordsPerString: 2, separator:' ' })[0];
-
-    this.countries = Object.keys(countries)
-      .map(id => ({ id, name: countries[id].name }))
-      .sort((a, b) => ('' + a.name).localeCompare(b.name));
+    this.roomName = this.$store.state.activeRoom || '';
 
     this.user = this.$store.getters.user;
     if (!this.user.country) {
