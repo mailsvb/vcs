@@ -17,6 +17,7 @@ export default defineConfig({
   },
   server: {
       port: process.env.VCS_FRONTEND_PORT || 3000,
+      host: process.env.VCS_FRONTEND_ADDR || '127.0.0.1',
       origin: process.env.VCS_FRONTEND_URL || 'http://127.0.0.1:3000'
   }
 });
