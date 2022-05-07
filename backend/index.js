@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 
-const port = process.env.PORT || '80';
+const port = process.env.VCS_PORT || '3001';
 
 console.log(`Running in ${process.env.NODE_ENV} mode`);
 
@@ -33,7 +33,7 @@ if (!process.env.VCS_API_KEY) {
 console.log('VCS_API_KEY:', process.env.VCS_API_KEY);
 console.log('VCS_AUTH_TYPE:', process.env.VCS_AUTH_TYPE);
 console.log('HTTPS:', process.env.HTTPS);
-console.log('PORT:', process.env.PORT);
+console.log('PORT:', port);
 
 // Setup CORS to allow only origin
 app.use(

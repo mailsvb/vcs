@@ -25,19 +25,17 @@ npm install
 
 #### Application server
 
-Contact the system administrator of your VCS system to obtain a VCS API key and the domain of the VCS system. Update the file `/backend/.env` with the obtained API Key for parameter `VCS_API_KEY`, and the VCS domain for parameter `VCS_HOST` (without https:// prefix). For the port specify `3001` as the default port `80` might already be in use on your PC. Leave the rest unchanged.
+Contact the system administrator of your VCS system to obtain a VCS API key and the domain of the VCS system. Set the following environment variables to adapt.
 
-E.g.:
-
-```env
+```
 # VCS API KEY used to create room via REST API
-VCS_API_KEY=04gf...
+export VCS_API_KEY=04gf...
 
 # VCS server, e.g. sandbox.virtualcareservices.net
-VCS_HOST=sandbox.virtualcareservices.net
+export VCS_HOST=sandbox.virtualcareservices.net
 
-# PORT express app is listening on. Default is port 80.
-PORT=3001
+# PORT express app is listening on. Default is port 3001.
+export VCS_PORT=3001
 ```
 
 #### Frontend Vue app
