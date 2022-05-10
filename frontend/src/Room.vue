@@ -1,9 +1,10 @@
 <template>
+  <Preferences ref="preferences"></Preferences>
   <Chat ref="chat" :participants="room?.remoteParticipants" @send="sendMessage"></Chat>
 
   <div v-if="room" ref="room" class="room" :class="{ mobile }">
-    <div class="text">
-      <div data-autotest="displayedRoomName" v-if="room.name">Room: {{ room.name }}</div>
+    <div class="roomname">
+      <div data-autotest="displayedRoomName" v-if="room.name">Caller: {{ room.name }}</div>
     </div>
     <div class="actions">
       <button data-autotest="toggleCamera" @click="switchCamera" v-if="mobile" class="pure-button pure-button-primary switch-camera">
@@ -23,13 +24,14 @@
       <button @click="$refs.chat.show()" class="pure-button pure-button-primary chat">
         <svg-icon type="mdi" :path="mdiChat"></svg-icon>
       </button>
+      <button @click="$refs.preferences.show()" v-if="!mobile" class="pure-button pure-button-primary preferences">
+        <svg-icon type="mdi" :path="mdiTune"></svg-icon>
+      </button>
     </div>
     <audio id="audio" ref="audio" autoplay></audio>
-    <div data-autotest="localParticipantVideo" id="localStream" ref="localStream"></div>
     <div class="call-stage">
-      <div v-for="participant in room.remoteParticipants" :key="participant.address">
+      <div v-for="participant in getStageParticipants()" :key="participant.address">
         <div class="text">
-          <img alt="" class="flag" v-if="getFlag(participant)" :src="getFlag(participant)" />
           <div data-autotest="displayedUser">{{ participant.name }}</div>
         </div>
         <div class="video">
@@ -37,10 +39,22 @@
         </div>
       </div>
     </div>
+    <div class="call-sidebar">
+      <div v-if="$store.state.viewSelf">
+        <div data-autotest="localParticipantVideo" class="video" id="localStream" ref="localStream"></div>
+      </div>
+      <div v-for="participant in getSidebarParticipants()" :key="participant.address">
+        <div class="text">
+          <div data-autotest="displayedUser">{{ participant.name }}</div>
+        </div>
+        <div class="video">
+          <video data-autotest="remoteParticipantVideo" :id="`sidebar-${participant.address}`" autoplay playsinline></video>
+        </div>
+      </div>
+    </div>
   </div>
   <div v-else-if="error" class="error">
-    <div>{{ error }}</div>
-    <button data-autotest="errorButton" class="pure-button pure-button-primary" @click="$router.push('/')">Start over</button>
+    <div>Error: {{ error }}</div>
   </div>
 </template>
 
@@ -52,11 +66,6 @@ button {
 }
 
 .room {
-  &:hover {
-    .actions {
-      display: block;
-    }
-  }
   justify-content: center;
   align-items: center;
   display: flex;
@@ -85,11 +94,6 @@ button {
   }
 
   #localStream {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    z-index: 1;
-
     ::v-deep(video) {
       width: 200px;
       object-fit: contain;
@@ -97,13 +101,36 @@ button {
   }
 
   .actions {
-    display: none;
+    display: block;
     position: absolute;
-    bottom: 50px;
+    bottom: 0px;
     z-index: 2;
     .hangup {
       color: white;
       background: red;
+    }
+    .preferences {
+      color: black;
+      background: #d0d0d0;
+    }
+  }
+
+  .roomname {
+    line-height: 25px;
+    position: absolute;
+    bottom: 50px;
+    font-size: 18px;
+    z-index: 1;
+    div {
+      mix-blend-mode: difference;
+      color: #fff;
+      display: inline;
+    }
+    .flag {
+      width: 20px;
+      margin-right: 8px;
+      border: solid #555 1px;
+      margin-bottom: -1px;
     }
   }
 
@@ -121,6 +148,26 @@ button {
       video {
         width: 100%;
         height: 100%;
+        max-height: 100vh;
+      }
+    }
+  }
+
+  .call-sidebar {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    > div {
+      flex: 1 1 0px;
+      position: relative;
+      text {
+        position: absolute;
+      }
+      video {
+        width: 200px;
       }
     }
   }
@@ -131,10 +178,16 @@ button {
       opacity: 0.5;
     }
 
+    .call-sidebar {
+      video {
+        width: 70px;
+        object-fit: cover;
+      }
+    }
+
     #localStream {
       ::v-deep(video) {
-        width: 120px;
-        height: 160px;
+        width: 70px;
         object-fit: cover;
       }
     }
@@ -158,8 +211,9 @@ button {
 import { nextTick } from 'vue';
 import { joinRoom } from 'vcs-realtime-sdk';
 import SvgIcon from '@jamescoyle/vue-icon';
-import { mdiVideo, mdiVideoOff, mdiMicrophone, mdiMicrophoneOff, mdiPhoneHangup, mdiCameraFlip, mdiChat } from '@mdi/js';
+import { mdiVideo, mdiVideoOff, mdiMicrophone, mdiMicrophoneOff, mdiPhoneHangup, mdiCameraFlip, mdiChat, mdiTune } from '@mdi/js';
 import Chat from './Chat.vue';
+import Preferences from './Preferences.vue';
 
 function getRandomInt(min, max) {
   min = Math.ceil(min);
@@ -170,14 +224,19 @@ function getRandomInt(min, max) {
 export default {
   components: {
     Chat,
-    SvgIcon
+    SvgIcon,
+    Preferences
   },
 
   data() {
     return {
       room: null,
+      remoteParticipantsCounter: 0,
       isMuted: false,
       hasVideo: true,
+      callerPresent: false,
+      ownName: false,
+      type: false,
       error: null,
       mdiVideo,
       mdiVideoOff,
@@ -185,22 +244,42 @@ export default {
       mdiMicrophoneOff,
       mdiPhoneHangup,
       mdiCameraFlip,
-      mdiChat
+      mdiChat,
+      mdiTune
     };
   },
 
   computed: {
     mobile() {
       return this.isMobile();
+    },
+    selfViewEnabled() {
+      return this.$store.state.viewSelf;
+    }
+  },
+
+  watch: {
+    async selfViewEnabled() {
+      if (this.$store.state.viewSelf === true) {
+        await nextTick();
+        this.room.localParticipant.attach(this.$refs.localStream);
+      }
+    },
+    async remoteParticipantsCounter(newCount, oldCount) {
+      console.log(`[trace][remoteParticipantsCounter] participants changed [${oldCount} -> ${newCount}]`);
+      this.callerPresent = this.room.remoteParticipants.filter(elem => elem.name?.toLowerCase() === 'caller' && elem.mediaStream !== null).length > 0;
+      await nextTick();
+      this.updateParticipantStreams();
     }
   },
 
   async mounted() {
     try {
       const room = this.$route.query?.id;
+      this.ownName = this.$route.query?.name;
+      this.type = this.$route.query?.type;
 
-      if (!room) {
-        // TODO: Show error page with link to home
+      if (!room || !this.ownName) {
         this.$router.push('/');
       }
 
@@ -224,8 +303,8 @@ export default {
         audio: this.$store.getters.useAudio,
         video: this.$store.getters.useVideo,
         hdVideo: this.$store.getters.useVideo,
-        name: this.$store.state.user?.name,
-        participantInfo: { country: this.$store.state.user?.country },
+        name: this.ownName,
+        participantInfo: { type: this.type },
         host: this.$store.state.config.VCS_HOST
       });
 
@@ -239,12 +318,15 @@ export default {
       // element inside that div.
       this.room.localParticipant.attach(this.$refs.localStream);
 
-      // Manually update the video elements srcObject. Another option would be
-      // to use the participant.attach API and let the SDK maintain the video
-      // elements like the local participant above.
       this.room.on('remoteStream', p => {
-        const el = this.$refs.room.querySelector(`#video-${p.address}`);
-        el && (el.srcObject = p.mediaStream);
+        console.log(`[trace][remoteStream] ${p.name} stream is ${p.mediaStream === null ? 'unavailable' : 'available'}.`);
+        const newParticipantsCounter = this.room.remoteParticipants.filter(elem => elem.mediaStream !== null).length;
+        if (this.remoteParticipantsCounter === newParticipantsCounter) {
+          console.log(`[trace][remoteStream] counter unchanged, updating streams anyway`);
+          this.updateParticipantStreams();
+        } else {
+          this.remoteParticipantsCounter = newParticipantsCounter;
+        }
       });
 
       this.room.on('remoteAudioStream', stream => {
@@ -257,21 +339,59 @@ export default {
       });
 
       // Create new video element, or remove video element via v-for binding
-      this.room.on('participantJoined', this.$forceUpdate);
-      this.room.on('participantLeft', this.$forceUpdate);
+      this.room.on('participantJoined', p => {
+        console.log(`[trace][participantJoined] ${p.name} joined the room.`);
+        this.$forceUpdate(p);
+      });
+      this.room.on('participantLeft', p => {
+        console.log(`[trace][participantLeft] ${p.name} left the room.`);
+        this.$forceUpdate(p);
+        this.remoteParticipantsCounter = this.room.remoteParticipants.filter(elem => elem.mediaStream !== null).length;
+      });
+      this.room.on('localStream', p => console.log('[trace][localStream] local stream has been updated'));
+      this.room.on('participantJoinFailed', (p, r) => console.log(`[trace][participantJoinFailed] ${p.name} failed to join for ${r}`));
     } catch (err) {
-      console.log('Error loading room: ', err);
-      this.error = err;
+      console.log('Error loading room: ', err.message);
+      this.error = err.message;
     }
   },
 
   methods: {
-    getFlag(participant) {
-      const country = participant?.participantInfo?.country;
-      if (!country) {
-        return null;
+    getSidebarParticipants() {
+      let returnedParticipants;
+      if (this.callerPresent === true) {
+        returnedParticipants = this.room.remoteParticipants.filter(elem => elem.name?.toLowerCase() !== 'caller');
+      } else {
+        returnedParticipants = [];
       }
-      return `https://purecatamphetamine.github.io/country-flag-icons/3x2/${country}.svg`;
+      console.log(`[trace][getSidebarParticipants] participants sidebar[${returnedParticipants.length}] callerIsPresent[${this.callerPresent}]`);
+      return returnedParticipants;
+    },
+    getStageParticipants() {
+      let returnedParticipants;
+      if (this.callerPresent === true) {
+        returnedParticipants = this.room.remoteParticipants.filter(elem => elem.name?.toLowerCase() === 'caller');
+      } else {
+        returnedParticipants = this.room.remoteParticipants;
+      }
+      console.log(`[trace][getStageParticipants] participants stage[${returnedParticipants.length}] callerIsPresent[${this.callerPresent}]`);
+      return returnedParticipants;
+    },
+    updateParticipantStreams(participants) {
+      this.room.remoteParticipants.forEach(elem => {
+        let el;
+        if (this.ownName === 'caller') {
+          el = this.$refs.room.querySelector(`#video-${elem.address}`);
+        } else {
+          if (this.callerPresent === false || elem.name === 'caller') {
+            el = this.$refs.room.querySelector(`#video-${elem.address}`);
+          } else {
+            el = this.$refs.room.querySelector(`#sidebar-${elem.address}`)
+          }
+        }
+        console.log(`[trace][updateParticipantStreams] ownName[${this.ownName}] callerPresent[${this.callerPresent}] elem.name[${elem.name}] el[${el === null ? 'not found' : 'found'}]`)
+        el && (el.srcObject = elem.mediaStream);
+      })
     },
     async toggleVideo() {
       this.hasVideo = await this.room.toggleVideo();

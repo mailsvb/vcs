@@ -11,8 +11,10 @@ const store = createStore({
       user: null,
       tokens: {},
       config: null,
+      viewSelf: true,
       version: process.env.PACKAGE_VERSION,
-      sdkVersion: process.env.PACKAGE_VERSION_SDK
+      sdkVersion: process.env.PACKAGE_VERSION_SDK,
+      productName: '911 | 112'
     };
   },
 

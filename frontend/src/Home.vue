@@ -1,40 +1,13 @@
 <template>
-  <Preferences ref="preferences"></Preferences>
   <div class="version">
     <div><a target="_blank" href="https://github.com/atos-virtual-care/vcs-realtime-sdk-web-demo">App Version: v{{ $store.state.version }}</a></div>
     <div><a target="_blank" href="https://sdk.virtualcareservices.net">SDK Version: v{{ $store.state.sdkVersion }}</a></div>
   </div>
   <div class="home">
-    <div class="tune">
-      <svg-icon @click="$refs.preferences.show()" type="mdi" :path="mdiTune"></svg-icon>
-    </div>
     <div class="spacer"></div>
     <div class="title">
       <img width="100" alt="" src="/logo.svg" />
-      <div>vcs-realtime-sdk demo</div>
-    </div>
-    <div class="pure-form pure-form-aligned">
-      <div class="pure-control-group">
-        <label>Room name</label>
-        <input data-autotest="roomName" v-model="roomName" />
-        <span class="pure-form-message-inline">This is a required field.</span>
-      </div>
-      <div class="pure-control-group">
-        <label>Your name</label>
-        <input data-autotest="user" v-model="user.name" />
-      </div>
-      <div class="pure-control-group">
-        <label>Join with</label>
-        <select data-autotest="roomType" v-model="mediaPreselection">
-          <option data-autotest="both" value="both">audio and video</option>
-          <option data-autotest="audio" value="audio">audio only</option>
-          <option data-autotest="video" value="video">video only</option>
-        </select>
-      </div>
-      <div class="pure-controls">
-        <button data-autotest="createRoom" @click="join(true)" :disabled="!roomName" class="pure-button pure-button-primary">Create room</button>
-        <button data-autotest="joinRoom" @click="join()" :disabled="!roomName" class="pure-button pure-button-primary">Join room</button>
-      </div>
+      <div>{{ $store.state.productName }}</div>
     </div>
     <div class="spacer"></div>
   </div>
@@ -71,70 +44,8 @@
   .title {
     text-align: center;
   }
-  .pure-form {
-    margin-top: 50px;
-    margin-bottom: 50px;
-  }
-  input,
-  select {
-    width: 240px;
-  }
-  button {
-    margin: 3px;
-  }
   .spacer {
     flex: 1;
   }
 }
 </style>
-
-<script>
-import SvgIcon from '@jamescoyle/vue-icon';
-import { mdiTune } from '@mdi/js';
-import Preferences from './Preferences.vue';
-
-export default {
-  components: {
-    Preferences,
-    SvgIcon
-  },
-
-  data() {
-    return {
-      roomName: null,
-      user: {},
-      mediaPreselection: 'both',
-      version: '',
-      mdiTune
-    };
-  },
-
-  async created() {
-    // Fetch config backend
-    await this.$store.dispatch('fetchConfig');
-
-    this.roomName = this.$store.state.activeRoom || '';
-
-    this.user = this.$store.getters.user;
-    if (!this.user.country) {
-      this.user.country = navigator.language.toUpperCase().split('-')[1];
-    }
-  },
-
-  methods: {
-    join(create) {
-      this.$store
-        .dispatch(create ? 'createRoom' : 'fetchRoom', this.roomName)
-        .then(() => {
-          this.$store.state.mediaPreselection = this.mediaPreselection;
-          this.$store.commit('setUser', this.user);
-          this.$router.push({ path: 'room', query: { id: this.roomName } });
-        })
-        .catch(err => {
-          console.error(err);
-          alert(err);
-        });
-    }
-  }
-};
-</script>

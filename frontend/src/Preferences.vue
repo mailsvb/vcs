@@ -46,6 +46,10 @@
           <label>Use HD video by default </label>
           <input type="checkbox" :checked="defaultHdVideo" @click="setDefaultHdVideo" />
         </div>
+        <div class="pure-control-group">
+          <label>Show self view </label>
+          <input type="checkbox" :checked="$store.state.viewSelf" @click="setSelfView" />
+        </div>
       </fieldset>
       <fieldset>
         <legend>Audio Settings</legend>
@@ -122,6 +126,9 @@ export default {
     },
     setDefaultHdVideo(e) {
       Settings.defaultHdVideo = !!e.target.checked;
+    },
+    setSelfView(e) {
+      this.$store.state.viewSelf = !!e.target.checked;
     },
     setAgc(e) {
       Device.autoGainControl = !!e.target.checked;
