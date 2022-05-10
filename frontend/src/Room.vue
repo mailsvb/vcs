@@ -31,24 +31,29 @@
     <audio id="audio" ref="audio" autoplay></audio>
     <div class="call-stage">
       <div v-for="participant in getStageParticipants()" :key="participant.address">
-        <div class="text">
-          <div data-autotest="displayedUser">{{ participant.name }}</div>
-        </div>
         <div class="video">
           <video data-autotest="remoteParticipantVideo" :id="`video-${participant.address}`" autoplay playsinline></video>
+        </div>
+        <div class="text">
+          <div data-autotest="displayedUser">{{ participant.name }}</div>
         </div>
       </div>
     </div>
     <div class="call-sidebar">
       <div v-if="$store.state.viewSelf">
-        <div data-autotest="localParticipantVideo" class="video" id="localStream" ref="localStream"></div>
+        <div class="video">
+          <div data-autotest="localParticipantVideo" class="video" id="localStream" ref="localStream"></div>
+        </div>
+        <div class="text">
+          <div data-autotest="displayedUser">{{ this.ownName }}</div>
+        </div>
       </div>
       <div v-for="participant in getSidebarParticipants()" :key="participant.address">
-        <div class="text">
-          <div data-autotest="displayedUser">{{ participant.name }}</div>
-        </div>
         <div class="video">
           <video data-autotest="remoteParticipantVideo" :id="`sidebar-${participant.address}`" autoplay playsinline></video>
+        </div>
+        <div class="text">
+          <div data-autotest="displayedUser">{{ participant.name }}</div>
         </div>
       </div>
     </div>
@@ -74,10 +79,10 @@ button {
   background: black;
 
   .text {
-    line-height: 25px;
+    line-height: 18px;
     position: absolute;
-    left: 10px;
-    top: 10px;
+    left: 5px;
+    top: 5px;
     font-size: 18px;
     z-index: 1;
     div {
@@ -139,6 +144,7 @@ button {
     height: 100%;
     align-items: center;
     display: flex;
+    position: fixed;
     > div {
       flex: 1 1 0px;
       position: relative;
@@ -155,16 +161,21 @@ button {
 
   .call-sidebar {
     position: absolute;
-    right: 10px;
-    top: 10px;
+    right: 5px;
+    top: 5px;
     align-items: center;
     display: flex;
     flex-direction: column;
     > div {
       flex: 1 1 0px;
       position: relative;
-      text {
+      .text {
+        background-color: #000;
         position: absolute;
+        line-height: 16px !important;
+        font-size: 14px !important;
+        left: 0px !important;
+        top: 0px !important;
       }
       video {
         width: 200px;
@@ -182,6 +193,13 @@ button {
       video {
         width: 70px;
         object-fit: cover;
+      }
+      .text {
+        background-color: #000;
+        line-height: 8px !important;
+        font-size: 8px !important;
+        left: 0px !important;
+        top: 0px !important;
       }
     }
 
@@ -267,7 +285,7 @@ export default {
     },
     async remoteParticipantsCounter(newCount, oldCount) {
       console.log(`[trace][remoteParticipantsCounter] participants changed [${oldCount} -> ${newCount}]`);
-      this.callerPresent = this.room.remoteParticipants.filter(elem => elem.name?.toLowerCase() === 'caller' && elem.mediaStream !== null).length > 0;
+      this.callerPresent = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() === 'caller' && elem.mediaStream !== null).length > 0;
       await nextTick();
       this.updateParticipantStreams();
     }
@@ -279,8 +297,8 @@ export default {
       this.ownName = this.$route.query?.name;
       this.type = this.$route.query?.type;
 
-      if (!room || !this.ownName) {
-        this.$router.push('/');
+      if (!room || !this.type) {
+        throw new Error('Missing parameters (name, type)');
       }
 
       // Make sure config is loaded
@@ -319,7 +337,7 @@ export default {
       this.room.localParticipant.attach(this.$refs.localStream);
 
       this.room.on('remoteStream', p => {
-        console.log(`[trace][remoteStream] ${p.name} stream is ${p.mediaStream === null ? 'unavailable' : 'available'}.`);
+        console.log(`[trace][remoteStream] ${p.name}/${p.participantInfo?.type} stream is ${p.mediaStream === null ? 'unavailable' : 'available'}.`);
         const newParticipantsCounter = this.room.remoteParticipants.filter(elem => elem.mediaStream !== null).length;
         if (this.remoteParticipantsCounter === newParticipantsCounter) {
           console.log(`[trace][remoteStream] counter unchanged, updating streams anyway`);
@@ -340,19 +358,22 @@ export default {
 
       // Create new video element, or remove video element via v-for binding
       this.room.on('participantJoined', p => {
-        console.log(`[trace][participantJoined] ${p.name} joined the room.`);
+        console.log(`[trace][participantJoined] ${p.name}/${p.participantInfo?.type} joined the room.`);
         this.$forceUpdate(p);
       });
       this.room.on('participantLeft', p => {
-        console.log(`[trace][participantLeft] ${p.name} left the room.`);
+        console.log(`[trace][participantLeft] ${p.name}/${p.participantInfo?.type} left the room.`);
         this.$forceUpdate(p);
         this.remoteParticipantsCounter = this.room.remoteParticipants.filter(elem => elem.mediaStream !== null).length;
       });
       this.room.on('localStream', p => console.log('[trace][localStream] local stream has been updated'));
-      this.room.on('participantJoinFailed', (p, r) => console.log(`[trace][participantJoinFailed] ${p.name} failed to join for ${r}`));
+      this.room.on('participantJoinFailed', (p, r) => console.log(`[trace][participantJoinFailed] ${p.name}/${p.participantInfo?.type} failed to join for ${r}`));
     } catch (err) {
       console.log('Error loading room: ', err.message);
       this.error = err.message;
+      setTimeout(() => {
+        this.$router.push('/');
+      }, 5000);
     }
   },
 
@@ -360,7 +381,7 @@ export default {
     getSidebarParticipants() {
       let returnedParticipants;
       if (this.callerPresent === true) {
-        returnedParticipants = this.room.remoteParticipants.filter(elem => elem.name?.toLowerCase() !== 'caller');
+        returnedParticipants = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() !== 'caller');
       } else {
         returnedParticipants = [];
       }
@@ -370,7 +391,7 @@ export default {
     getStageParticipants() {
       let returnedParticipants;
       if (this.callerPresent === true) {
-        returnedParticipants = this.room.remoteParticipants.filter(elem => elem.name?.toLowerCase() === 'caller');
+        returnedParticipants = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() === 'caller');
       } else {
         returnedParticipants = this.room.remoteParticipants;
       }
@@ -380,16 +401,16 @@ export default {
     updateParticipantStreams(participants) {
       this.room.remoteParticipants.forEach(elem => {
         let el;
-        if (this.ownName === 'caller') {
+        if (this.type === 'caller') {
           el = this.$refs.room.querySelector(`#video-${elem.address}`);
         } else {
-          if (this.callerPresent === false || elem.name === 'caller') {
+          if (this.callerPresent === false || elem.participantInfo?.type === 'caller') {
             el = this.$refs.room.querySelector(`#video-${elem.address}`);
           } else {
             el = this.$refs.room.querySelector(`#sidebar-${elem.address}`)
           }
         }
-        console.log(`[trace][updateParticipantStreams] ownName[${this.ownName}] callerPresent[${this.callerPresent}] elem.name[${elem.name}] el[${el === null ? 'not found' : 'found'}]`)
+        console.log(`[trace][updateParticipantStreams] ownName[${this.ownName}] callerPresent[${this.callerPresent}] participant[${elem.name}/${elem.participantInfo?.type}] el[${el === null ? 'not found' : 'found'}]`)
         el && (el.srcObject = elem.mediaStream);
       })
     },
