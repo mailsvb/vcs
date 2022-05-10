@@ -23,17 +23,8 @@
         <label>Your name</label>
         <input data-autotest="user" v-model="user.name" />
       </div>
-      <!--<div class="pure-control-group">
-        <label>Join with</label>
-        <select data-autotest="roomType" v-model="mediaPreselection">
-          <option data-autotest="both" value="both">audio and video</option>
-          <option data-autotest="audio" value="audio">audio only</option>
-          <option data-autotest="video" value="video">video only</option>
-        </select>
-      </div>-->
       <div class="pure-controls">
-        <button data-autotest="createRoom" @click="join(true)" :disabled="!phoneNumber" class="pure-button pure-button-primary">Create room</button>
-        <button data-autotest="joinRoom" @click="join()" :disabled="!phoneNumber" class="pure-button pure-button-primary">Join room</button>
+        <button data-autotest="joinRoom" @click="initialize()" :disabled="!phoneNumber" class="pure-button pure-button-primary">Initialize</button>
       </div>
     </div>
     <div class="spacer"></div>
@@ -81,6 +72,7 @@
   }
   button {
     margin: 3px;
+    width: 235px;
   }
   .spacer {
     flex: 1;
@@ -115,36 +107,49 @@ export default {
     }
   },
 
-  async created() {
+  async mounted() {
     // Fetch config backend
     await this.$store.dispatch('fetchConfig');
 
-    //this.phoneNumber = this.$store.state.activeRoom || '';
+    this.phoneNumber = this.$route.query?.phone || this.$store.state.activeRoom || '';
+    this.user.name = this.$route.query?.name || 'Calltaker';
 
-    this.user = this.$store.getters.user;
-    if (!this.user.country) {
-      this.user.country = navigator.language.toUpperCase().split('-')[1];
+    if (this.phoneNumber && this.user.name) {
+      setTimeout(() => {
+        this.initialize();
+      }, 2000)
     }
   },
 
-  mounted() {
-    this.phoneNumber = this.$route.query?.phone;
-  },
-
   methods: {
-    join(create) {
-      this.$store
-        .dispatch(create ? 'createRoom' : 'fetchRoom', this.phoneNumber)
-        .then(() => {
-          // this.$store.state.mediaPreselection = this.mediaPreselection;
-          this.$store.state.mediaPreselection = 'both';
-          this.$store.commit('setUser', this.user);
-          this.$router.push({ path: 'room', query: { id: this.phoneNumber } });
-        })
-        .catch(err => {
-          console.error(err);
-          alert(err);
-        });
+    async initialize() {
+      let room = await this.getRoom();
+      !room && (room = await this.createRoom());
+      if (room) {
+        this.$store.state.mediaPreselection = 'both';
+        this.$store.commit('setUser', this.user);
+        this.$router.push({ path: 'room', query: { id: this.phoneNumber, type: 'calltaker', name: this.user.name } });
+      } else {
+        alert('Failed to initialize');
+      }
+    },
+    async getRoom() {
+      try {
+        const room = await this.$store.dispatch('fetchRoom', this.phoneNumber);
+        return room;
+      } catch(err) {
+        console.error(err.message);
+        return null;
+      }
+    },
+    async createRoom() {
+      try {
+        const room = await this.$store.dispatch('createRoom', this.phoneNumber);
+        return room;
+      } catch(err) {
+        console.error(err.message);
+        return null;
+      }
     }
   }
 };
