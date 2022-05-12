@@ -102,6 +102,10 @@ button {
     ::v-deep(video) {
       width: 200px;
       object-fit: contain;
+      background: black;
+      background-image: url('/noVideo120.png');
+      background-repeat: no-repeat;
+      background-position: center;
     }
   }
 
@@ -155,6 +159,9 @@ button {
         width: 100%;
         height: 100%;
         max-height: 100vh;
+        background-image: url('/noVideo250.png');
+        background-repeat: no-repeat;
+        background-position: center;
       }
     }
   }
@@ -179,6 +186,10 @@ button {
       }
       video {
         width: 200px;
+        background: black;
+        background-image: url('/noVideo120.png');
+        background-repeat: no-repeat;
+        background-position: center;
       }
     }
   }
@@ -253,6 +264,7 @@ export default {
       isMuted: false,
       hasVideo: true,
       callerPresent: false,
+      doctorPresent: false,
       ownName: false,
       type: false,
       error: null,
@@ -286,6 +298,7 @@ export default {
     async remoteParticipantsCounter(newCount, oldCount) {
       console.log(`[trace][remoteParticipantsCounter] participants changed [${oldCount} -> ${newCount}]`);
       this.callerPresent = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() === 'caller' && elem.mediaStream !== null).length > 0;
+      this.doctorPresent = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() === 'doctor' && elem.mediaStream !== null).length > 0;
       await nextTick();
       this.updateParticipantStreams();
     }
@@ -294,11 +307,11 @@ export default {
   async mounted() {
     try {
       const room = this.$route.query?.id;
-      this.ownName = this.$route.query?.name;
       this.type = this.$route.query?.type;
+      this.ownName = this.$route.query?.name || this.type;
 
       if (!room || !this.type) {
-        throw new Error('Missing parameters (name, type)');
+        throw new Error('Missing parameters (id, type)');
       }
 
       // Make sure config is loaded
@@ -319,8 +332,10 @@ export default {
 
       this.room = await joinRoom(token, {
         audio: this.$store.getters.useAudio,
-        video: this.$store.getters.useVideo,
-        hdVideo: this.$store.getters.useVideo,
+        //video: this.$store.getters.useVideo,
+        //hdVideo: this.$store.getters.useVideo,
+        video: this.type === 'caller' || this.type === 'doctor',
+        hdVideo: false,
         name: this.ownName,
         participantInfo: { type: this.type },
         host: this.$store.state.config.VCS_HOST
@@ -380,29 +395,50 @@ export default {
   methods: {
     getSidebarParticipants() {
       let returnedParticipants;
-      if (this.callerPresent === true) {
-        returnedParticipants = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() !== 'caller');
+      if (this.type === 'caller') {
+        if (this.doctorPresent === true) {
+          returnedParticipants = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() !== 'doctor');
+        } else {
+          returnedParticipants = [];
+        }
       } else {
-        returnedParticipants = [];
+        if (this.callerPresent === true) {
+          returnedParticipants = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() !== 'caller');
+        } else {
+          returnedParticipants = [];
+        }
       }
-      console.log(`[trace][getSidebarParticipants] participants sidebar[${returnedParticipants.length}] callerIsPresent[${this.callerPresent}]`);
+      console.log(`[trace][getSidebarParticipants] participants sidebar[${returnedParticipants.length}] callerIsPresent[${this.callerPresent} doctorIsPresent[${this.doctorPresent}]`);
       return returnedParticipants;
     },
     getStageParticipants() {
       let returnedParticipants;
-      if (this.callerPresent === true) {
-        returnedParticipants = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() === 'caller');
+      if (this.type === 'caller') {
+        if (this.doctorPresent === true) {
+          returnedParticipants = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() === 'doctor');
+        } else {
+          returnedParticipants = this.room.remoteParticipants;
+        }
       } else {
-        returnedParticipants = this.room.remoteParticipants;
+        if (this.callerPresent === true) {
+          returnedParticipants = this.room.remoteParticipants.filter(elem => elem.participantInfo?.type?.toLowerCase() === 'caller');
+        } else {
+          returnedParticipants = this.room.remoteParticipants;
+        }
       }
-      console.log(`[trace][getStageParticipants] participants stage[${returnedParticipants.length}] callerIsPresent[${this.callerPresent}]`);
+      console.log(`[trace][getStageParticipants] participants stage[${returnedParticipants.length}] callerIsPresent[${this.callerPresent} doctorIsPresent[${this.doctorPresent}]`);
       return returnedParticipants;
     },
     updateParticipantStreams(participants) {
       this.room.remoteParticipants.forEach(elem => {
+        console.log(`[trace] ${JSON.stringify(elem)}`)
         let el;
         if (this.type === 'caller') {
-          el = this.$refs.room.querySelector(`#video-${elem.address}`);
+          if (this.doctorPresent === false || elem.participantInfo?.type === 'doctor') {
+            el = this.$refs.room.querySelector(`#video-${elem.address}`);
+          } else {
+            el = this.$refs.room.querySelector(`#sidebar-${elem.address}`)
+          }
         } else {
           if (this.callerPresent === false || elem.participantInfo?.type === 'caller') {
             el = this.$refs.room.querySelector(`#video-${elem.address}`);
