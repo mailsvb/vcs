@@ -124,6 +124,44 @@ app.get('/api/config', (req, res) => {
   res.json(config);
 });
 
+app.post('/api/notify', basicAuth(), async (req, res) => {
+  try {
+    const body = req.body;
+    let result;
+    if (body.chat_id) {
+      console.log(`[POST /api/notify]: Telegram user[${body.chat_id}] url[${body.text}]`);
+      result = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_CRED}/sendMessage`, {
+        method: 'post',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+    } else if (body.number) {
+      console.log(`[POST /api/notify]: Twilio user[${body.number}] url[${body.text}]`);
+      const authorization = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_ACCOUNT_TOKEN}`).toString('base64');
+      result = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`, {
+        method: 'post',
+        headers: {
+          'Authorization': `Basic ${authorization}`,
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
+        body: `To=${encodeURIComponent(body.number)}&MessagingServiceSid=${encodeURIComponent(process.env.TWILIO_MESSAGE_SID)}&Body=${encodeURIComponent(body.text)}`
+      });
+    } else {
+        throw new Error('Missing data for notification');
+    }
+    if (!result.ok) {
+      throw new Error(`${result.status} ${result.statusText}`);
+    }
+    result = await result.json();
+    res.json(result);
+  } catch (err) {
+    console.error('[POST /api/notify]: Error notifying user.', err && err.message);
+    res.status(409).send('Error notifying user');
+  }
+});
+
 // Return index.html for all other routes.
 // E.g. user navigates to /room?id=abc directly
 app.get('*', (req, res) => {

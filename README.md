@@ -16,8 +16,8 @@ The application has two parts:
 Clone this repository and install the dependencies.
 
 ```bash
-git clone https://github.com/ATOS-VIRTUAL-CARE/vcs-realtime-sdk-web-demo
-cd vcs-realtime-sdk-web-demo
+git clone https://github.com/mailsvb/vcs
+cd vcs
 npm install
 ```
 
@@ -25,10 +25,10 @@ npm install
 
 #### Application server
 
-Contact the system administrator of your VCS system to obtain a VCS API key and the domain of the VCS system. Set the following environment variables to adapt.
+Environment variables for the backend
 
-```
-# VCS API KEY used to create room via REST API
+```env
+# VCS API KEY used to create room via REST API. Contact the system administrator of your VCS system to obtain a VCS API key and the domain of the VCS system.
 export VCS_API_KEY=04gf...
 
 # VCS server, e.g. sandbox.virtualcareservices.net
@@ -36,20 +36,29 @@ export VCS_HOST=sandbox.virtualcareservices.net
 
 # PORT express app is listening on. Default is port 3001.
 export VCS_PORT=3001
+
+# TELEGRAM_CRED for accessing the Telegram API for notifications
+export TELEGRAM_CRED=123...:Abc
+
+# TWILIO_ACCOUNT_SID, TWILIO_ACCOUNT_TOKEN, TWILIO_MESSAGE_SID for accessing the Twilio SMS API for notifications
+export TWILIO_ACCOUNT_SID=Abc...
+export TWILIO_ACCOUNT_TOKEN=Abc...
+export TWILIO_MESSAGE_SID=Abc...
 ```
 
 #### Frontend Vue app
 
-Set the `VITE_APP_SERVER` environment variable to `http://localhost:3001`. This tells your web app where the Application server is hosted at.
-
-E.g.:
+Environment variables for the backend
 
 ```env
-# So in development set to localhost:3001 for example
+# VITE_APP_SERVER is the backend server URL. So in development set to localhost:3001 for example
 export VITE_APP_SERVER=http://localhost:3001
 
-# Set the port where the frontend webserver should listen on. Default is 443
-export VCS_FRONTEND_PORT=443
+# VCS_FRONTEND_PORT Set the port where the frontend webserver should listen on. Default is 3000
+export VCS_FRONTEND_PORT=3000
+
+# VCS_FRONTEND_ADDR Set the addr of the interface the frontend should listen on. Default is 127.0.0.1
+export VCS_FRONTEND_ADDR=127.0.0.1
 ```
 
 ### Start the app
@@ -57,52 +66,8 @@ export VCS_FRONTEND_PORT=443
 There are no other dependencies to run the app locally. Once you add the API key as explained above, start the backend and frontend. The application is available at <http://localhost:3000/>.
 
 ```bash
-# Start the backend application server and frontend Vue app (default port 3000)
+# Start the backend application server and frontend Vue app
 npm run dev
 
 # Navigate to http://localhost:3000/
 ```
-
-### HTTPS
-
-In some cases you might want to serve the backend via HTTPS so that external devices can easier connect to the backend. And you may also want to serve the frontend on https for camera access reasons.
-
-#### Serve backend on https
-
-In the backend `.env` file uncomment HTTPS and set certificate and private key file names. These files should be added to the `backend/cert` folder.
-
-backend `.env` file:
-
-```env
-# Serve as HTTPS for development with mobile devices.
-# Make sure to use https setting in frontend when setting HTTPS=true here
-HTTPS=true
-CERT_FILE=tls.crt
-KEY_FILE=tls.key
-```
-
-In the fontend `.env` file make sure to use https for VITE_APP_SERVER.
-
-frontend `.env` file:
-
-```env
-VITE_APP_SERVER=https://localhost:3001
-```
-
-#### Serve frontend on https
-
-To serve the frontend on https, run the app via `npm run dev:https` instead.
-
-### Authentication
-
-By default there is no authentication required to access the `POST /room` endpoint to create rooms. Basic Authentication can be configured in the backend and frontend env files. Set the backend env property `AUTH_TYPE`to `BASIC_AUTH`, and then configure the credentials of a user that has permissions to create rooms via env properties `BASIC_AUTH_USER` & `BASIC_AUTH_PASSWORD`.
-
-## More information
-
-Where to find more information about the VCS Realtime SDKs and APIs.
-
-- [Main page for the VCS SDKs and APIs](https://sdk.virtualcareservices.net/)
-- [An overview of how application servers and clients work together to create audio/video sessions](https://sdk.virtualcareservices.net/guide/#overview)
-- [JavaScript SDK documentation](https://sdk.virtualcareservices.net/sdks/js/)
-- [iOS SDK documentation](https://sdk.virtualcareservices.net/sdks/ios/)
-- [Android SDK documentation](https://sdk.virtualcareservices.net/sdks/android/)
