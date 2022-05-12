@@ -104,6 +104,27 @@ const store = createStore({
         state.config = res;
         console.log('Fetched config', res);
       }
+    },
+    async sendNotify({ state, commit }, data) {
+      const isBasicAuth = state.config.AUTH_TYPE === 'BASIC_AUTH';
+
+      // Ask application server to create a room
+      const headers = { 'content-type': 'application/json' };
+
+      let res = await fetch(`${backend}/api/notify`, {
+        method: 'post',
+        headers,
+        credentials: isBasicAuth ? 'include' : 'omit',
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        if (res.status === 409) {
+          throw new Error(`Could not notify "${data.chat_id || data.number}"`);
+        }
+        throw new Error('Error creating room. VCS system might be down at this time.');
+      }
+      res = await res.json();
+      console.log(`Notified ${data.chat_id || data.number}`);
     }
   }
 });

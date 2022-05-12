@@ -35,6 +35,15 @@ console.log('VCS_AUTH_TYPE:', process.env.VCS_AUTH_TYPE);
 console.log('HTTPS:', process.env.HTTPS);
 console.log('PORT:', port);
 
+let notifyData;
+if (fs.existsSync('../notifyData.js')) {
+  try {
+    notifyData = JSON.parse(fs.readFileSync('../notifyData.js').toString())
+  } catch(err) {
+    console.error(`Could not parse notifyData ${err.message}`);
+  }
+}
+
 // Setup CORS to allow only origin
 app.use(
   cors({
@@ -120,6 +129,7 @@ app.get('/api/config', (req, res) => {
     VCS_HOST: process.env.VCS_HOST,
     AUTH_TYPE: process.env.AUTH_TYPE || 'NONE'
   };
+  notifyData && (config.NOTIFY_DATA = JSON.stringify(notifyData));
   console.log('Return configuration: ', config);
   res.json(config);
 });

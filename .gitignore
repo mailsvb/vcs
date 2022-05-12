@@ -7,3 +7,4 @@ app.yaml
 dispatch.yaml
 backend/cert/*
 !backend/cert/.keep
+notifyData.js

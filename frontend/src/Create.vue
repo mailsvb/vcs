@@ -97,7 +97,8 @@ export default {
       user: {},
       mediaPreselection: 'both',
       version: '',
-      mdiTune
+      mdiTune,
+      NotifyData: { allowedRoomNames: [], users: [] }
     };
   },
 
@@ -123,12 +124,29 @@ export default {
 
   methods: {
     async initialize() {
+      if (this.$store.state.config.NOTIFY_DATA) {
+        try {
+          this.NotifyData = JSON.parse(this.$store.state.config.NOTIFY_DATA);
+        } catch (err) {
+          console.error(`Could not parse notifyData ${err.message}`);
+        }
+      }
       let room = await this.getRoom();
       !room && (room = await this.createRoom());
       if (room) {
         this.$store.state.mediaPreselection = 'both';
         this.$store.commit('setUser', this.user);
         this.$router.push({ path: 'room', query: { id: this.phoneNumber, type: 'calltaker', name: this.user.name } });
+        if (this.NotifyData.allowedRoomNames && this.NotifyData.allowedRoomNames.indexOf(this.phoneNumber) > -1) {
+          const baseUrl = `${window.location.protocol}//${window.location.host}/room?id=${this.phoneNumber}`;
+          this.NotifyData.users && this.NotifyData.users.forEach(async (user) => {
+            if (user.type && user.name) {
+              const url = `${baseUrl}&type=${user.type}&name=${user.name}`;
+              user.chat_id && await this.$store.dispatch('sendNotify', {chat_id: user.chat_id, text: url});
+              user.number && await this.$store.dispatch('sendNotify', {number: user.number, text: url});
+            }
+          })
+        }
       } else {
         alert('Failed to initialize');
       }
