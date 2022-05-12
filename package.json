@@ -1,7 +1,7 @@
 {
-  "name": "@atos-virtual-care/vcs-realtime-sdk-web-demo",
+  "name": "emergency-e-consultation-video-assistant",
   "version": "1.0.0",
-  "description": "Example app for vcs-realtime-sdk with vuejs",
+  "description": "Emergency E-Consultation Video Assistant",
   "author": "roger.urscheler@atos.net",
   "license": "Apache-2.0",
   "scripts": {
@@ -15,7 +15,7 @@
     "build:frontend": "cd frontend && npm run build",
     "deploy:gcp": "NODE_ENV=production npm run build:frontend && gcloud app deploy --quiet"
   },
-  "repository": "git://github.com/atos-virtual-care/vcs-realtime-sdk-web-demo.git",
+  "repository": "git://github.com/mailsvb/vcs.git",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
