@@ -14,7 +14,7 @@ const store = createStore({
       viewSelf: true,
       version: process.env.PACKAGE_VERSION,
       sdkVersion: process.env.PACKAGE_VERSION_SDK,
-      productName: '911 | 112'
+      productName: 'Emergency e-consultation Video Assistant'
     };
   },
 
@@ -39,6 +39,12 @@ const store = createStore({
         throw new Error('saveToken: token or room is null');
       }
       state.tokens[obj.room] = obj.token;
+    },
+    deleteToken: (state, room) => {
+      if (!room || !state.tokens[room]) {
+        throw new Error('deleteToken: room does not exist');
+      }
+      delete state.tokens[room];
     },
     setUser: (state, user) => {
       localStorage.setItem('user', JSON.stringify(user));
@@ -86,6 +92,22 @@ const store = createStore({
       commit('saveToken', { room: res.room.name, token: res.room.token });
       console.log(`Fetched room ${name}`);
       return res.room.token;
+    },
+    async deleteRoom({ commit }, name) {
+      let res = await fetch(`${backend}/api/room?name=${name}`, {
+        method: 'delete',
+        headers: { 'content-type': 'application/json' }
+      });
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error(`Room "${name}" not found`);
+        } else {
+          throw new Error('Error deleting room. VCS system might be down at this time.');
+        }
+      }
+      res = await res.json();
+      commit('deleteToken', name);
+      console.log(`Deleted room ${name}`);
     },
     async fetchConfig({ state }) {
       if (!state.config) {

@@ -459,8 +459,12 @@ export default {
     toggleMute() {
       this.isMuted = this.room.toggleMute();
     },
-    leave() {
+    async leave() {
       this.room.leave();
+      if (this.room.remoteParticipants.length === 0) {
+        await this.$store.dispatch('deleteRoom', this.$store.state.activeRoom);
+        this.$store.state.activeRoom = null;
+      }
       setTimeout(() => {
         this.$router.push('/');
       }, 300);

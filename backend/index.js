@@ -105,6 +105,39 @@ app.post('/api/room', basicAuth(), async (req, res) => {
   }
 });
 
+app.delete('/api/room', async (req, res) => {
+  if (req.query.name) {
+    try {
+      const room = rooms[req.query.name.toLowerCase()];
+      if (!room) {
+        console.log(`[DELETE /api/room]: Room ${req.query.name} not found`);
+        res.sendStatus(404);
+      } else {
+        console.log(`[DELETE /api/room]: Room ${req.query.name} found id[${room.room.id}]`);
+        let result = await fetch(`https://${process.env.VCS_HOST}/api/realtime/room?id=${room.room.id}`, {
+          method: 'delete',
+          headers: {
+            'content-type': 'application/json',
+            'x-vcs-token': process.env.VCS_API_KEY
+          }
+        });
+        if (!result.ok) {
+          throw new Error(`${result.status} ${result.statusText}`);
+        }
+        result = await result.json();
+        delete rooms[req.query.name.toLowerCase()];
+        res.json(result);
+      }
+    } catch (err) {
+      console.error('[DELETE /api/room]: Error deleting room.', err);
+      res.status(500).send('Error deleting room');
+    }
+  } else {
+    console.error('[DELETE /api/room]: Error deleting room:', err);
+    res.status(500).send('Missing parameter [name]');
+  }
+});
+
 app.get('/api/room', (req, res) => {
   if (req.query.name) {
     const room = rooms[req.query.name.toLowerCase()];

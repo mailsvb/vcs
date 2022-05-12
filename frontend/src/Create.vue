@@ -113,7 +113,7 @@ export default {
     await this.$store.dispatch('fetchConfig');
 
     this.phoneNumber = this.$route.query?.phone || this.$store.state.activeRoom || '';
-    this.user.name = this.$route.query?.name || 'Calltaker';
+    this.user.name = this.$route.query?.name || 'Operator';
 
     if (this.phoneNumber && this.user.name) {
       setTimeout(() => {
@@ -136,7 +136,7 @@ export default {
       if (room) {
         this.$store.state.mediaPreselection = 'both';
         this.$store.commit('setUser', this.user);
-        this.$router.push({ path: 'room', query: { id: this.phoneNumber, type: 'calltaker', name: this.user.name } });
+        this.$router.push({ path: 'room', query: { id: this.phoneNumber, type: 'operator', name: this.user.name } });
         if (this.NotifyData.allowedRoomNames && this.NotifyData.allowedRoomNames.indexOf(this.phoneNumber) > -1) {
           const baseUrl = `${window.location.protocol}//${window.location.host}/room?id=${this.phoneNumber}`;
           this.NotifyData.users && this.NotifyData.users.forEach(async (user) => {
