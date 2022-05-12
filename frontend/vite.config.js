@@ -16,7 +16,10 @@ export default defineConfig({
     }
   },
   server: {
-      port: process.env.VCS_FRONTEND_PORT || 3000,
-      host: process.env.VCS_FRONTEND_ADDR || '127.0.0.1'
+    port: process.env.VCS_FRONTEND_PORT || 3000,
+    host: process.env.VCS_FRONTEND_ADDR || '127.0.0.1',
+    hmr: {
+      clientPort: process.env.VCS_FRONTEND_HMR_CLIENTPORT || process.env.VCS_FRONTEND_PORT || 3000
+    }
   }
 });

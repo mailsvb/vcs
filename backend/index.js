@@ -34,6 +34,9 @@ console.log('VCS_API_KEY:', process.env.VCS_API_KEY);
 console.log('VCS_AUTH_TYPE:', process.env.VCS_AUTH_TYPE);
 console.log('HTTPS:', process.env.HTTPS);
 console.log('PORT:', port);
+console.log('VCS_FRONTEND_ADDR:', process.env.VCS_FRONTEND_ADDR);
+console.log('VCS_FRONTEND_PORT:', process.env.VCS_FRONTEND_PORT);
+console.log('VCS_FRONTEND_HMR_CLIENTPORT:', process.env.VCS_FRONTEND_HMR_CLIENTPORT);
 
 let notifyData;
 if (fs.existsSync('../notifyData.js')) {

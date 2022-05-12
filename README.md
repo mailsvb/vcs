@@ -59,6 +59,9 @@ export VCS_FRONTEND_PORT=3000
 
 # VCS_FRONTEND_ADDR Set the addr of the interface the frontend should listen on. Default is 127.0.0.1
 export VCS_FRONTEND_ADDR=127.0.0.1
+
+# VCS_FRONTEND_HMR_CLIENTPORT If running behind proxy, you can set the port for vitejs HMR connection to the external proxy port. E.g. using nginx for TLS termination
+export VCS_FRONTEND_HMR_CLIENTPORT=443
 ```
 
 ### Start the app
